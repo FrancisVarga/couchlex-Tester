@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)"
+					   width="640" height="480">
+	<fx:Script>
+		<![CDATA[
+			import cc.varga.couchx.CouchX;
+			import cc.varga.couchx.CouchXEvent;
+			import cc.varga.couchx.CouchXUtils;
+			
+			import com.adobe.net.URI;
+			import com.adobe.serialization.json.JSON;
+			
+			import mx.events.FlexEvent;
+			
+			import org.httpclient.HttpClient;
+			import org.httpclient.events.HttpDataEvent;
+			import org.httpclient.events.HttpDataListener;
+			import org.httpclient.events.HttpResponseEvent;
+				
+			private static const uri : String = "http://localhost:5984";
+			private static const dbName : String = "dev_serverlist";
+			private static const mimteType : String = "application/json";
+			private static const sumOfData : uint = 10;
+			
+			private var couchx : CouchX = new CouchX(dbName);
+			private var dbURI : URI = new URI(uri + dbName);
+			private var _dataList : Array = new Array();
+			private var serverlist : Array = new Array();
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				CouchXUtils.DATABASE_NAME = dbName;
+				registerListener(couchx);
+				couchx.getUUID(1000);
+
+			}
+			
+			private function onAllDocuments(event : CouchXEvent):void{
+				
+				serverlist = event.data.rows as Array;
+				for(var i:uint=0; i < 1; i++){
+					var tmp : CouchX = CouchXUtils.creatCouchX();	
+					tmp.addEventListener(CouchXEvent.GET_COMPLETE, onServerListItemLoaded);
+					tmp.getDocument(serverlist[i].id);
+				}
+				
+			}
+			
+			private function onServerListItemLoaded(event : CouchXEvent):void{
+ 				_dataList.push(event.data);
+				modifiedData(event.data);
+			}
+			
+			private function modifiedData(dataObj : Object):void{
+				
+				var couchx : CouchX = CouchXUtils.creatCouchX();
+				dataObj.comment = dataObj._id + " // " + dataObj._rev;
+				couchx.addEventListener(CouchXEvent.POST_COMPLETE, onPostComplete);
+				couchx.updateDocument(dataObj);
+				
+			}
+			
+			private function onPostComplete(event : CouchXEvent):void{
+				
+			}
+			
+			private function registerListener(listener : IEventDispatcher):void{
+				
+				
+				listener.addEventListener(CouchXEvent.GET_ALL_DOCUMENTS, onAllDocuments);
+				listener.addEventListener(CouchXEvent.GET_UUIDS_COMPLETE, onUUIDComplete);
+				
+			}	
+			
+			private function onPutComplete(event : CouchXEvent):void{
+			
+				
+				
+			}
+			
+			private function onUUIDComplete(event : CouchXEvent):void{
+				
+				//createData(5);
+				couchx.getAllDocuments();
+				
+			}
+			
+			private function createData(createData : uint):void{
+				
+				for(var i:uint = 0; i < sumOfData; i++){
+					
+					var tmp : CouchX = new CouchX(dbName);
+					tmp.putDocument(tmp.UUID, serverData(i));
+					
+				}
+				
+			}
+			
+			private function serverData(id : uint):Object{
+				
+				var object : Object = new Object();
+				object["databasename"] = "dbName" + id;
+				object["host"] = "hostName" + id;
+				object["info"] = "This is the server info..." + id;
+				object["port"] = 5984;
+				object["type"] = "couchdb" + id;
+				
+				return object;
+				
+			}
+			
+			private function registerEvents(listener : HttpDataListener):void{
+				
+				listener.onConnect = onConnect;
+				
+			}
+			
+			private function onConnect(event : Event):void{
+				
+			}
+			
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+</s:WindowedApplication>
